@@ -81,9 +81,9 @@ class TestSuite():
         self.name = name
         self.cases = []
 
-    def createTestCase(self, expressionToEvaluate):
+    def createTestCase(self, expressionToEvaluate, description = ""):
         """Create a new test case"""
-        case = TestCase(expressionToEvaluate)
+        case = TestCase(expressionToEvaluate, description)
         case.setGlobalsDictionary(self.globals)
         self.cases.append(case)
         return case
@@ -96,12 +96,12 @@ class TestSuite():
             allTestsPassed = allTestsPassed and case.success
         self.success = allTestsPassed
 
-    def getOrCreateTestCase(self, expressionToEvaluate):
+    def getOrCreateTestCase(self, expressionToEvaluate, description = ""):
         """Get a test case by expression, and create it if needed"""
         existingTestCase = self.getTestCaseByExpression(expressionToEvaluate)
         if (existingTestCase is not None):
             return existingTestCase
-        return self.createTestCase(expressionToEvaluate)
+        return self.createTestCase(expressionToEvaluate, description)
 
     def getTestCaseByExpression(self, expression):
         """Get test case by expression to evaluate"""
@@ -133,9 +133,10 @@ class TestSuite():
 class TestCase():
     """A test case"""
 
-    def __init__(self, expressionToEvaluate):
+    def __init__(self, expressionToEvaluate, description = ""):
         """Create a new test case"""
         self.expressionToEvaluate = expressionToEvaluate
+        self.description = description if (description != "") else expressionToEvaluate
         self.globals = globals()
 
     def evaluate(self):
@@ -155,9 +156,9 @@ class TestCase():
     def printResults(self, indentation):
         """Print the results of the test in the standard output"""
         if (self.success):
-            print("{0}✔️ {1}".format(indentation, self.expressionToEvaluate))
+            print("{0}✔️ {1}".format(indentation, self.description))
         else:
-            print("{0}❌ {1}  =>  {2}: {3}".format(indentation, self.expressionToEvaluate, self.errorType, self.errorMessage))
+            print("{0}❌ {1}  =>  {2}: {3}".format(indentation, self.description, self.errorType, self.errorMessage))
 
     def run(self, indentation = ""):
         """Evaluate and print test results"""
