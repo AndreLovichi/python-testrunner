@@ -172,16 +172,21 @@ class TestCase:
     def evaluate(self):
         """Evaluate the expression to be tested"""
         try:
-            assert eval(self.expressionToEvaluate, self.globals)
-            self.success = True
-        except AssertionError:
-            self.success = False
-            self.errorType = "AssertionError"
-            self.errorMessage = "Invalid result"
-        except Exception as e:        
-            self.success = False
-            self.errorType = type(e).__name__
-            self.errorMessage = str(e)
+            assertionErrorMessage = "The assertion \"{0}\" should be true".format(self.expressionToEvaluate)
+            assert eval(self.expressionToEvaluate, self.globals), assertionErrorMessage
+            self.markAsSuccess()
+        except Exception as error:
+            self.markAsFailed(error)
+
+    def markAsFailed(self, error):
+        """Mark this test case as error (and set all error-related fields)"""
+        self.success = False
+        self.errorType = type(error).__name__
+        self.errorMessage = str(error)
+
+    def markAsSuccess(self):
+        """Mark this test case as success"""
+        self.success = True
 
     def printResults(self, indentation):
         """Print the results of the test in the standard output"""
@@ -213,6 +218,15 @@ class MultilineTestCase(TestCase):
 
     def evaluate(self):
         """Evaluate the expression to be tested"""
-        for i in range(len(self.lines) - 1):
-            exec(self.lines[i], self.globals)
-        TestCase.evaluate(self) 
+        self.executeAllLinesExceptLast()
+        if (hasattr(self, "success") and self.success == False):
+            return
+        TestCase.evaluate(self)
+
+    def executeAllLinesExceptLast(self):
+        """Execute all lines except the last one (to be evaluated separately)"""
+        try:
+            for i in range(len(self.lines) - 1):
+                exec(self.lines[i], self.globals)
+        except Exception as error:
+            self.markAsFailed(error)
