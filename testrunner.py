@@ -195,8 +195,15 @@ class TestCase:
         else:
             print("{0}❌ {1}  =>  {2}: {3}".format(indentation, self.description, self.errorType, self.errorMessage))
 
+    def reset(self):
+        attributesToDelete = ["errorMessage", "errorType", "success"]
+        for attributeToDelete in attributesToDelete:
+            if (hasattr(self, attributeToDelete)):
+                delattr(self, attributeToDelete)
+
     def run(self, indentation = ""):
         """Evaluate and print test results"""
+        self.reset()
         self.evaluate()
         self.printResults(indentation)
 
@@ -218,6 +225,7 @@ class MultilineTestCase(TestCase):
 
     def evaluate(self):
         """Evaluate the expression to be tested"""
+        TestCase.reset(self)
         self.executeAllLinesExceptLast()
         if (hasattr(self, "success") and self.success == False):
             return
