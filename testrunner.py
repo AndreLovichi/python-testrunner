@@ -10,7 +10,7 @@ __licence__ = "GPL"
 
 
 
-class TestRunner():
+class TestRunner:
     """A test runner inspired from "mocha" output"""
 
     def __init__(self):
@@ -73,7 +73,7 @@ class TestRunner():
 
 
 
-class TestSuite():
+class TestSuite:
     """A test suite is a group of related test cases"""
 
     def __init__(self, name):
@@ -81,7 +81,22 @@ class TestSuite():
         self.name = name
         self.cases = []
 
-    def createTestCase(self, expressionToEvaluate, description = ""):
+    def createTestCase(self, expressionOrLinesToEvaluate, description = ""):
+        """Create a new test case"""
+        isMultiline = isinstance(expressionOrLinesToEvaluate, list)
+        if (isMultiline):
+            return self.createMultilineTestCase(expressionOrLinesToEvaluate, description)
+        else:
+            return self.createSinglelineTestCase(expressionOrLinesToEvaluate, description)            
+
+    def createMultilineTestCase(self, lines, description = ""):
+        """Create a new multiline test case"""
+        multilineCase = MultilineTestCase(lines, description)
+        multilineCase.setGlobalsDictionary(self.globals)
+        self.cases.append(multilineCase)
+        return multilineCase
+
+    def createSinglelineTestCase(self, expressionToEvaluate, description = ""):
         """Create a new test case"""
         case = TestCase(expressionToEvaluate, description)
         case.setGlobalsDictionary(self.globals)
@@ -96,15 +111,30 @@ class TestSuite():
             allTestsPassed = allTestsPassed and case.success
         self.success = allTestsPassed
 
-    def getOrCreateTestCase(self, expressionToEvaluate, description = ""):
+    def getOrCreateTestCase(self, expressionOrLinesToEvaluate, description = ""):
         """Get a test case by expression, and create it if needed"""
-        existingTestCase = self.getTestCaseByExpression(expressionToEvaluate)
+        existingTestCase = self.getTestCaseByExpression(expressionOrLinesToEvaluate)
         if (existingTestCase is not None):
             return existingTestCase
-        return self.createTestCase(expressionToEvaluate, description)
+        return self.createTestCase(expressionOrLinesToEvaluate, description)
 
-    def getTestCaseByExpression(self, expression):
-        """Get test case by expression to evaluate"""
+    def getTestCaseByExpression(self, expressionOrLines):
+        """Get test case by expression to evaluate or lines"""
+        isMultiline = isinstance(expressionOrLines, list)
+        if (isMultiline):
+            return self.getMultilineTestCaseByLines(expressionOrLines)
+        else:
+            return self.getSinglelineTestCaseByExpression(expressionOrLines)
+
+    def getMultilineTestCaseByLines(self, lines):
+        """Get singleline test case by expression to evaluate"""
+        for case in self.cases:
+            if (case.lines == lines):
+                return case
+        return None
+
+    def getSinglelineTestCaseByExpression(self, expression):
+        """Get singleline test case by expression to evaluate"""
         for case in self.cases:
             if (case.expressionToEvaluate == expression):
                 return case
@@ -130,7 +160,7 @@ class TestSuite():
 
 
 
-class TestCase():
+class TestCase:
     """A test case"""
 
     def __init__(self, expressionToEvaluate, description = ""):
@@ -168,3 +198,21 @@ class TestCase():
     def setGlobalsDictionary(self, globals):
         """Set the dictionary containing the current scope's global variables"""
         self.globals = globals
+
+
+
+class MultilineTestCase(TestCase):
+    """"A multiline test case"""
+
+    def __init__(self, lines, description = ""):
+        """Create a new multiline test case (only the last line will be evaluated)"""
+        self.lines = lines
+        lineToEvaluate = lines[len(lines) - 1]
+        multilineDescription = description if (description != "") else " ; ".join(lines)         
+        TestCase.__init__(self, lineToEvaluate, multilineDescription)
+
+    def evaluate(self):
+        """Evaluate the expression to be tested"""
+        for i in range(len(self.lines) - 1):
+            exec(self.lines[i], self.globals)
+        TestCase.evaluate(self) 
