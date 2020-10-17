@@ -97,7 +97,7 @@ class TestSuite:
         return multilineCase
 
     def createSinglelineTestCase(self, expressionToEvaluate, description = ""):
-        """Create a new test case"""
+        """Create a new singleline test case"""
         case = TestCase(expressionToEvaluate, description)
         case.setGlobalsDictionary(self.globals)
         self.cases.append(case)
@@ -127,16 +127,16 @@ class TestSuite:
             return self.getSinglelineTestCaseByExpression(expressionOrLines)
 
     def getMultilineTestCaseByLines(self, lines):
-        """Get singleline test case by expression to evaluate"""
+        """Get multiline test case by expression to evaluate"""
         for case in self.cases:
-            if (case.lines == lines):
+            if (hasattr(case, "lines") and case.lines == lines):
                 return case
         return None
 
     def getSinglelineTestCaseByExpression(self, expression):
         """Get singleline test case by expression to evaluate"""
         for case in self.cases:
-            if (case.expressionToEvaluate == expression):
+            if (hasattr(case, "expressionToEvaluate") and case.expressionToEvaluate == expression):
                 return case
         return None
 
