@@ -81,6 +81,10 @@ class TestSuite:
         self.name = name
         self.cases = []
 
+    def clear(self):
+        """Remove all test cases"""
+        self.cases = []
+
     def createTestCase(self, expressionOrLinesToEvaluate, description = ""):
         """Create a new test case"""
         isMultiline = isinstance(expressionOrLinesToEvaluate, list)
