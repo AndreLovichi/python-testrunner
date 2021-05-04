@@ -85,6 +85,13 @@ class TestSuite:
         """Remove all test cases"""
         self.cases = []
 
+    def createErrorTestCase(self, expression, expectedErrorType, expectedErrorMessage):
+        """Create a new error test case"""
+        errorTestCase = ErrorTestCase(expression, expectedErrorType, expectedErrorMessage)
+        errorTestCase.setGlobalsDictionary(self.globals)
+        self.cases.append(errorTestCase)
+        return errorTestCase
+
     def createTestCase(self, expressionOrLinesToEvaluate, description = ""):
         """Create a new test case"""
         isMultiline = isinstance(expressionOrLinesToEvaluate, list)
@@ -115,12 +122,25 @@ class TestSuite:
             allTestsPassed = allTestsPassed and case.success
         self.success = allTestsPassed
 
+    def getOrCreateErrorTestCase(self, expression, expectedErrorType, expectedErrorMessage):
+        """Get an error test case by expression, and create it if needed"""
+        existingErrorTestCase = self.getErrorTestCaseByExpression(expression)
+        if (existingErrorTestCase is not None):
+            return existingErrorTestCase
+        return self.createErrorTestCase(expression, expectedErrorType, expectedErrorMessage)
+
     def getOrCreateTestCase(self, expressionOrLinesToEvaluate, description = ""):
         """Get a test case by expression, and create it if needed"""
         existingTestCase = self.getTestCaseByExpression(expressionOrLinesToEvaluate)
         if (existingTestCase is not None):
             return existingTestCase
         return self.createTestCase(expressionOrLinesToEvaluate, description)
+
+    def getErrorTestCaseByExpression(self, expression):
+        for case in self.cases:
+            if (hasattr(case, "expressionToEvaluate") and case.expressionToEvaluate == expression):
+                return case
+        return None        
 
     def getTestCaseByExpression(self, expressionOrLines):
         """Get test case by expression to evaluate or lines"""
@@ -214,6 +234,52 @@ class TestCase:
     def setGlobalsDictionary(self, globals):
         """Set the dictionary containing the current scope's global variables"""
         self.globals = globals
+
+
+
+class ErrorTestCase(TestCase):
+    """A test case that should raise an error"""
+
+    def __init__(self, expressionToEvaluate, errorType, errorMessage = None, description = ""):
+        """Create a new error test case"""
+        TestCase.__init__(self, expressionToEvaluate, description)
+        self.description = "{0} should raise a {1}".format(expressionToEvaluate, errorType)
+        if (errorMessage is not None):
+            self.description += " with message \"{0}\"".format(errorMessage)
+        self.expectedErrorType = errorType
+        self.expectedErrorMessage = errorMessage
+
+    def markAsFailed(self):
+        self.success = False
+        self.errorType = "ExpectedError"
+        if (self.actualErrorType is None):
+            self.errorMessage = "No error was raised"
+        else:
+            self.errorMessage = "Raised instead a {0}".format(self.actualErrorType)
+            if (self.actualErrorMessage is not None):
+                self.errorMessage += " with message \"{0}\"".format(self.actualErrorMessage)
+
+    def evaluate(self):
+        self.actualErrorType = None
+        self.actualErrorMessage = None
+        try:
+            eval(self.expressionToEvaluate, self.globals)
+            self.markAsFailed()
+        except Exception as error:
+            self.actualErrorType = type(error).__name__
+            self.actualErrorMessage = str(error)
+            if (self.isExpectedError()):
+                self.markAsSuccess()
+            else:
+                self.markAsFailed()
+        
+    def isExpectedError(self):
+        if (self.actualErrorType != self.expectedErrorType):
+            return False
+        if (self.expectedErrorMessage is None):
+            return True
+        else:
+            return self.actualErrorMessage == self.expectedErrorMessage
 
 
 
